@@ -17,13 +17,17 @@ public class Startup {
 
     void onStart(@Observes StartupEvent ev) {
         LOG.info("The application is starting with profile " + ProfileManager.getActiveProfile());
+        LOG.info("Hello world");
     }
 
     @Transactional
     public void loadData(@Observes StartupEvent evt) {
         // reset and load all test users
         //User.deleteAll();
-        //User.add("admin", "admin", "admin");
+        if(User.findByUserName("admin") == null){
+            User.add("admin", "admin", "admin");
+        }
+        //
         //User.add("user", "user", "user");
     }
 }

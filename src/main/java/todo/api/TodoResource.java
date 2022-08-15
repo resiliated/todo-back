@@ -2,6 +2,8 @@ package todo.api;
 
 
 
+import todo.DTOTodo;
+import todo.model.Category;
 import todo.model.Todo;
 import todo.model.User;
 
@@ -17,7 +19,7 @@ import java.util.List;
 import org.jboss.logging.Logger;
 
 
-@Path("/api")
+@Path("/todo")
 @Produces("application/json")
 @Consumes("application/json")
 @RolesAllowed("user")
@@ -46,7 +48,7 @@ public class TodoResource {
             throw new WebApplicationException("Todo with id of " + id + " does not exist.", Status.NOT_FOUND);
         }
 
-        if(entity.validateUser(user)){
+        if(!entity.validateUser(user)){
             throw new WebApplicationException("User " + user.username + " is trying to get a todo that is not his", Status.FORBIDDEN);
         }
 
@@ -55,20 +57,28 @@ public class TodoResource {
 
     @POST
     @Transactional
-    public Response create(@Context SecurityContext securityContext, @Valid Todo item) {
-        item.setUser(User.findByUserName(securityContext.getUserPrincipal().getName()));
-        item.persist();
-        return Response.status(Status.CREATED).entity(item).build();
+    public Response create(@Context SecurityContext securityContext, @Valid DTOTodo item) {
+
+        Todo todo = new Todo();
+
+        todo.setUser(User.findByUserName(securityContext.getUserPrincipal().getName()));
+        todo.title = item.title;
+        todo.content = item.content;
+        todo.category = Category.findByTitle(item.categoryTitle);
+
+        todo.persist();
+        return Response.status(Status.CREATED).entity(todo).build();
     }
 
     @PATCH
     @Path("/{id}")
     @Transactional
     public Response update(@Context SecurityContext securityContext, @Valid Todo todo, @PathParam("id") Long id) {
+
         User user = User.findByUserName(securityContext.getUserPrincipal().getName());
         Todo entity = Todo.findById(id);
 
-        if(entity.validateUser(user)){
+        if(!entity.validateUser(user)){
             throw new WebApplicationException("User " + user.username + " is trying to update a todo that is not his", Status.FORBIDDEN);
         }
 
@@ -76,8 +86,11 @@ public class TodoResource {
         entity.status = todo.status;
         entity.title = todo.title;
         entity.content = todo.content;
+        entity.category = todo.category;
+        entity.persist();
 
-        return Response.ok(entity).build();
+        return Response.status(Status.ACCEPTED).entity(entity).build();
+
     }
 
     @DELETE
@@ -93,16 +106,17 @@ public class TodoResource {
     public Response deleteOne(@Context SecurityContext securityContext, @PathParam("id") Long id) {
         User user = User.findByUserName(securityContext.getUserPrincipal().getName());
         Todo entity = Todo.findById(id);
+
         if (entity == null) {
             throw new WebApplicationException("Todo with id of " + id + " does not exist.", Status.NOT_FOUND);
         }
 
-        if(entity.validateUser(user)){
+        if(!entity.validateUser(user)){
             throw new WebApplicationException("User " + user.username + " is trying to delete a todo that is not his", Status.FORBIDDEN);
         }
 
         entity.delete();
-        return Response.noContent().build();
+        return Response.status(Status.NO_CONTENT).build().noContent().build();
     }
 
 }

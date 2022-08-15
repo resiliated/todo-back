@@ -32,6 +32,10 @@ public class Todo extends PanacheEntity {
     @JoinColumn(name = "userId", referencedColumnName = "id")
     private User user;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "categoryId", referencedColumnName = "id")
+    public Category category;
+
     public void setUser(User user){
         this.user = user;
     }
@@ -43,6 +47,11 @@ public class Todo extends PanacheEntity {
     public static List<Todo> listTodoByUser(User user){
         return list("userid", user.id);
     }
+
+    public static List<Todo> listTodoByCategory(Category category){
+        return list("categoryid", category.id);
+    }
+
     public static List<Todo> findNotCompleted() {
         return list("status", Status.COMPLETED.getNumVal());
     }
